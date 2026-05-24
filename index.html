@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>血圧管理ノート</title>
+    <style>
+        :root {
+            --primary-color: #e91e63;
+            --bg-color: #f5f7fa;
+            --card-color: #ffffff;
+            --text-color: #333333;
+            --sidebar-width: 220px;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        /* 左側サイドバー */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: #ffffff;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            padding-top: 20px;
+            box-sizing: border-box;
+            z-index: 100;
+        }
+        .sidebar h2 {
+            font-size: 18px;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .sidebar button {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 15px 25px;
+            text-align: left;
+            font-size: 16px;
+            color: #555;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+        .sidebar button:hover {
+            background-color: #fce4ec;
+            color: var(--primary-color);
+        }
+        .sidebar button.active {
+            background-color: #fce4ec;
+            color: var(--primary-color);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        /* メインコンテンツエリア */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 40px;
+            width: calc(100% - var(--sidebar-width));
+            max-width: 900px;
+            box-sizing: border-box;
+        }
+
+        /* ページ切り替え */
+        .page-content {
+            display: none;
+        }
+        .page-content.active {
+            display: block;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        .card {
+            background: var(--card-color);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        .input-block {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #fffdfd;
+        }
+        .input-block h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #555;
+            border-left: 3px solid var(--primary-color);
+            padding-left: 8px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input[type="number"], input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        .row .form-group {
+            flex: 1;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .submit-btn:disabled {
+            background-color: #bbb;
+            cursor: not-allowed;
+        }
+        .pdf-btn {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .clear-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #757575;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 30px;
+        }
+
+        /* テーブルスタイル */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+        th {
+            background-color: #f8f9fa;
+            color: #555;
+        }
+        .sub-row {
+            background-color: #ffffff;
+        }
+        .avg-row {
+            background-color: #fff3e0;
+            font-weight: bold;
+        }
+        
+        .action-btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+        }
+        .edit-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .delete-btn {
+            background-color: #ff5252;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .alert-msg {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+        }
+        .edit-mode-msg {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+        }
+
+        /* ★PDF・印刷時に枠線と脈拍を完全に揃える修正CSS★ */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+            body {
+                display: block !important;
+                background-color: #fff;
+                color: #000;
+                width: 100% !important;
+            }
+            .sidebar, .pdf-btn, .clear-btn, .action-btn-container, #home, #input-page, h1 {
+                display: none !important;
+            }
+            /* 印刷時は「操作」の列（thの6番目、tdの最後）を完全に消す */
+            table th:nth-child(6),
+            table td.action-td {
+                display: none !important;
+            }
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding: 0 !important;
+            }
+            .page-content {
+                display: block !important;
+            }
+            .card {
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            #history-page h2 {
+                text-align: center;
+                color: #000;
+                margin-bottom: 20px;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                table-layout: fixed !important;
+            }
+            th, td {
+                border: 1px solid #000 !important;
+                padding: 8px 4px !important;
+                font-size: 12px !important;
+            }
+            /* 印刷時の5つの列幅を綺麗に固定して、絶対に右端を揃える */
+            table th:nth-child(1) { width: 25% !important; } /* 日付 */
+            table th:nth-child(2) { width: 15% !important; } /* 区分 */
+            table th:nth-child(3) { width: 20% !important; } /* 最高血圧 */
+            table th:nth-child(4) { width: 20% !important; } /* 最低血圧 */
+            table th:nth-child(5) { width: 20% !important; } /* 脈拍 */
+
+            .avg-row {
+                background-color: #f0f0f0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; position: relative; flex-direction: row; justify-content: space-around; padding-top: 0; }
+            .sidebar h2 { display: none; }
+            .sidebar button { padding: 15px 10px; text-align: center; border-left: none; }
+            .sidebar button.active { border-bottom: 3px solid var(--primary-color); }
+            .main-content { margin-left: 0; width: 100%; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>🩸 血圧ノート</h2>
+    <button id="btn-home" class="menu-btn active" onclick="switchPage('home')">ホーム</button>
+    <button id="btn-input" class="menu-btn" onclick="switchPage('input-page')">記録入力</button>
+    <button id="btn-history" class="menu-btn" onclick="switchPage('history-page')">過去の履歴</button>
+</div>
+
+<div class="main-content">
+    
+    <div id="home" class="page-content active">
+        <h1>血圧管理システム</h1>
+        <div class="card">
+            <p>1日1回、3回分の血圧をまとめて測定・記録し、平均値を自動で算出できるノートです。</p>
+            <p>左側のメニューを選択すると、それぞれのページに切り替わります。</p>
+        </div>
+    </div>
+    
+    <div id="input-page" class="page-content">
+        <div class="card">
+            <h2 id="formTitle">データを記録する (1日1回)</h2>
+            <div id="duplicateAlert" class="alert-msg">⚠️ 本日はすでに記録済みです。修正する場合は「過去の履歴」から編集してください。</div>
+            <div id="editModeAlert" class="edit-mode-msg">📝 現在、選択した日付のデータを【編集・修正中】です。</div>
+            
+            <form id="bpForm">
+                <div class="form-group" style="max-width: 200px;">
+                    <label for="date">測定日</label>
+                    <input type="date" id="date" required onchange="checkDateDuplicate()">
+                </div>
+
+                <div class="input-block">
+                    <h3>1回目の測定</h3>
+                    <div class="row">
+                        <div class="form-group"><label>最高血圧</label><input type="number" id="sys1" required></div>
+                        <div class="form-group"><label>最低血圧</label><input type="number" id="dia1" required></div>
+                        <div class="form-group"><label>脈拍</label><input type="number" id="pul1" required></div>
+                    </div>
+                </div>
+
+                <div class="input-block">
+                    <h3>2回目の測定</h3>
+                    <div class="row">
+                        <div class="form-group"><label>最高血圧</label><input type="number" id="sys2" required></div>
+                        <div class="form-group"><label>最低血圧</label><input type="number" id="dia2" required></div>
+                        <div class="form-group"><label>脈拍</label><input type="number" id="pul2" required></div>
+                    </div>
+                </div>
+
+                <div class="input-block">
+                    <h3>3回目の測定</h3>
+                    <div class="row">
+                        <div class="form-group"><label>最高血圧</label><input type="number" id="sys3" required></div>
+                        <div class="form-group"><label>最低血圧</label><input type="number" id="dia3" required></div>
+                        <div class="form-group"><label>脈拍</label><input type="number" id="pul3" required></div>
+                    </div>
+                </div>
+
+                <button type="submit" id="saveBtn" class="submit-btn">3つの記録を保存</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="history-page" class="page-content">
+        <button class="pdf-btn" onclick="window.print()">📄 このページをPDFで保存 / 印刷</button>
+        <div class="card">
+            <h2>過去の履歴（3回測定と平均値）</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>区分</th>
+                            <th>最高血圧 (mmHg)</th>
+                            <th>最低血圧 (mmHg)</th>
+                            <th>脈拍 (拍/分)</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordTableBody"></tbody>
+                </table>
+            </div>
+            <button class="clear-btn" onclick="clearAllData()">すべてのデータを消去</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentEditId = null;
+
+    window.onload = function() {
+        setCurrentDate();
+        displayRecords();
+        checkDateDuplicate();
+    };
+
+    function switchPage(pageId) {
+        const pages = document.querySelectorAll('.page-content');
+        pages.forEach(page => page.classList.remove('active'));
+
+        const buttons = document.querySelectorAll('.menu-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+
+        document.getElementById(pageId).classList.add('active');
+        
+        if(pageId === 'home') document.getElementById('btn-home').classList.add('active');
+        if(pageId === 'input-page') {
+            document.getElementById('btn-input').classList.add('active');
+            checkDateDuplicate();
+        }
+        if(pageId === 'history-page') document.getElementById('btn-history').classList.add('active');
+    }
+
+    function setCurrentDate() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        document.getElementById('date').value = `${year}-${month}-${day}`;
+    }
+
+    function checkDateDuplicate() {
+        const targetDate = document.getElementById('date').value;
+        const records = JSON.parse(localStorage.getItem('bloodPressureRecords')) || [];
+        
+        if (currentEditId !== null) {
+            const currentRecord = records.find(r => r.id === currentEditId);
+            if (currentRecord && currentRecord.date === targetDate) {
+                document.getElementById('duplicateAlert').style.display = 'none';
+                document.getElementById('saveBtn').disabled = false;
+                return;
+            }
+        }
+
+        const isDuplicate = records.some(r => r.date === targetDate);
+        const alertMsg = document.getElementById('duplicateAlert');
+        const saveBtn = document.getElementById('saveBtn');
+
+        if (isDuplicate) {
+            alertMsg.style.display = 'block';
+            saveBtn.disabled = true;
+        } else {
+            alertMsg.style.display = 'none';
+            saveBtn.disabled = false;
+        }
+    }
+
+    document.getElementById('bpForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const date = document.getElementById('date').value;
+        const newRecordData = [
+            { sys: parseInt(document.getElementById('sys1').value), dia: parseInt(document.getElementById('dia1').value), pul: parseInt(document.getElementById('pul1').value) },
+            { sys: parseInt(document.getElementById('sys2').value), dia: parseInt(document.getElementById('dia2').value), pul: parseInt(document.getElementById('pul2').value) },
+            { sys: parseInt(document.getElementById('sys3').value), dia: parseInt(document.getElementById('dia3').value), pul: parseInt(document.getElementById('pul3').value) }
+        ];
+
+        let records = JSON.parse(localStorage.getItem('bloodPressureRecords')) || [];
+
+        if (currentEditId !== null) {
+            records = records.map(r => {
+                if (r.id === currentEditId) {
+                    r.date = date; r.isThreeTimes = true; r.data = newRecordData;
+                }
+                return r;
+            });
+            alert('データを修正しました。');
+        } else {
+            records.push({ id: Date.now(), date: date, isThreeTimes: true, data: newRecordData });
+        }
+
+        records.sort((a, b) => new Date(b.date) - new Date(a.date));
+        localStorage.setItem('bloodPressureRecords', JSON.stringify(records));
+
+        cancelEditMode();
+        displayRecords();
+        switchPage('history-page');
+    });
+
+    function editRecord(id) {
+        const records = JSON.parse(localStorage.getItem('bloodPressureRecords')) || [];
+        const record = records.find(r => r.id === id);
+        if (!record) return;
+
+        currentEditId = id;
+        document.getElementById('date').value = record.date;
+        record.data.forEach((d, i) => {
+            document.getElementById(`sys${i+1}`).value = d.sys;
+            document.getElementById(`dia${i+1}`).value = d.dia;
+            document.getElementById(`pul${i+1}`).value = d.pul;
+        });
+
+        document.getElementById('formTitle').innerText = "データを修正する";
+        document.getElementById('editModeAlert').style.display = 'block';
+        switchPage('input-page');
+    }
+
+    function cancelEditMode() {
+        currentEditId = null;
+        document.getElementById('formTitle').innerText = "データを記録する (1日1回)";
+        document.getElementById('editModeAlert').style.display = 'none';
+        for(let i=1; i<=3; i++) {
+            document.getElementById(`sys${i}`).value = '';
+            document.getElementById(`dia${i}`).value = '';
+            document.getElementById(`pul${i}`).value = '';
+        }
+        setCurrentDate();
+    }
+
+    function displayRecords() {
+        const records = JSON.parse(localStorage.getItem('bloodPressureRecords')) || [];
+        const tableBody = document.getElementById('recordTableBody');
+        tableBody.innerHTML = '';
+
+        if (records.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6">記録がありません。</td></tr>';
+            return;
+        }
+
+        records.forEach(record => {
+            if (!record.isThreeTimes) return;
+
+            let totalSys = 0, totalDia = 0, totalPul = 0;
+            
+            record.data.forEach((d, index) => {
+                totalSys += d.sys; totalDia += d.dia; totalPul += d.pul;
+                const row = document.createElement('tr');
+                row.className = 'sub-row';
+                
+                // 印刷時にきれいに消せるよう、操作セルに「class="action-td"」を付与
+                row.innerHTML = `
+                    ${index === 0 ? `<td rowspan="4" style="vertical-align:middle; font-weight:bold;">${record.date}</td>` : ''}
+                    <td style="color:#777;">${index + 1}回目</td>
+                    <td>${d.sys}</td>
+                    <td>${d.dia}</td>
+                    <td>${d.pul}</td>
+                    ${index === 0 ? `<td rowspan="4" class="action-td" style="vertical-align:middle;"><div class="action-btn-container"><button class="edit-btn" onclick="editRecord(${record.id})">編集</button><button class="delete-btn" onclick="deleteRecord(${record.id})">削除</button></div></td>` : ''}
+                `;
+                tableBody.appendChild(row);
+            });
+
+            const avgRow = document.createElement('tr');
+            avgRow.className = 'avg-row';
+            avgRow.innerHTML = `
+                <td>平均値</td>
+                <td>${Math.round(totalSys / 3)}</td>
+                <td>${Math.round(totalDia / 3)}</td>
+                <td>${Math.round(totalPul / 3)}</td>
+            `;
+            tableBody.appendChild(avgRow);
+        });
+    }
+
+    function deleteRecord(id) {
+        if (confirm('削除してもよろしいですか？')) {
+            let records = JSON.parse(localStorage.getItem('bloodPressureRecords')) || [];
+            records = records.filter(r => r.id !== id);
+            localStorage.setItem('bloodPressureRecords', JSON.stringify(records));
+            cancelEditMode(); displayRecords(); checkDateDuplicate();
+        }
+    }
+
+    function clearAllData() {
+        if (confirm('すべて消去しますか？')) {
+            localStorage.removeItem('bloodPressureRecords');
+            cancelEditMode(); displayRecords(); checkDateDuplicate();
+        }
+    }
+</script>
+</body>
+</html>

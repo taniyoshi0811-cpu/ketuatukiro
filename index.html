@@ -243,7 +243,7 @@
             display: none;
         }
 
-        /* ★PDF・印刷時に枠線と脈拍を完全に揃える修正CSS★ */
+        /* PDF・印刷設定 */
         @media print {
             @page {
                 size: A4 portrait;
@@ -258,7 +258,6 @@
             .sidebar, .pdf-btn, .clear-btn, .action-btn-container, #home, #input-page, h1 {
                 display: none !important;
             }
-            /* 印刷時は「操作」の列（thの6番目、tdの最後）を完全に消す */
             table th:nth-child(6),
             table td.action-td {
                 display: none !important;
@@ -290,12 +289,11 @@
                 padding: 8px 4px !important;
                 font-size: 12px !important;
             }
-            /* 印刷時の5つの列幅を綺麗に固定して、絶対に右端を揃える */
-            table th:nth-child(1) { width: 25% !important; } /* 日付 */
-            table th:nth-child(2) { width: 15% !important; } /* 区分 */
-            table th:nth-child(3) { width: 20% !important; } /* 最高血圧 */
-            table th:nth-child(4) { width: 20% !important; } /* 最低血圧 */
-            table th:nth-child(5) { width: 20% !important; } /* 脈拍 */
+            table th:nth-child(1) { width: 25% !important; }
+            table th:nth-child(2) { width: 15% !important; }
+            table th:nth-child(3) { width: 20% !important; }
+            table th:nth-child(4) { width: 20% !important; }
+            table th:nth-child(5) { width: 20% !important; }
 
             .avg-row {
                 background-color: #f0f0f0 !important;
@@ -484,7 +482,8 @@
             records.push({ id: Date.now(), date: date, isThreeTimes: true, data: newRecordData });
         }
 
-        records.sort((a, b) => new Date(b.date) - new Date(a.date));
+        // ★保存時に「a.date - b.date」にすることで、古い日付順に並び替えるように修正しました
+        records.sort((a, b) => new Date(a.date) - new Date(b.date));
         localStorage.setItem('bloodPressureRecords', JSON.stringify(records));
 
         cancelEditMode();
@@ -532,6 +531,9 @@
             return;
         }
 
+        // ★表示処理時にも古い順になるよう、念のためこちらでもソートを適用
+        records.sort((a, b) => new Date(a.date) - new Date(b.date));
+
         records.forEach(record => {
             if (!record.isThreeTimes) return;
 
@@ -542,7 +544,6 @@
                 const row = document.createElement('tr');
                 row.className = 'sub-row';
                 
-                // 印刷時にきれいに消せるよう、操作セルに「class="action-td"」を付与
                 row.innerHTML = `
                     ${index === 0 ? `<td rowspan="4" style="vertical-align:middle; font-weight:bold;">${record.date}</td>` : ''}
                     <td style="color:#777;">${index + 1}回目</td>
